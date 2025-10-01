@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.signature-canvas {
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.pdf-viewer {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: auto;
+}
+
+.signature-field {
+  position: absolute;
+  border: 2px dashed #4F46E5;
+  background-color: rgba(79, 70, 229, 0.1);
+  cursor: move;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #4F46E5;
+  font-weight: 500;
+  user-select: none;
+}
+
+.signature-field:hover {
+  background-color: rgba(79, 70, 229, 0.2);
+  border-color: #6366F1;
+}
+
+.signature-field.active {
+  border-color: #10B981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.signature-field.signed {
+  border-color: #10B981;
+  background-color: rgba(16, 185, 129, 0.05);
+  border-style: solid;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #4F46E5;
+  border: 1px solid white;
+  border-radius: 50%;
+}
+
+.resize-handle.bottom-right {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+.loader-spinner {
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #4F46E5;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.toast-container {
+  z-index: 9999;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-draft {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.status-sent {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+.status-viewed {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-completed {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.status-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-voided {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.status-expired {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}

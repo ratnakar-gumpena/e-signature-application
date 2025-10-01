@@ -1,0 +1,33 @@
+{
+  "name": "esignature-app",
+  "version": "1.0.0",
+  "description": "Complete e-signature web application with template management and document signing",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "cd client && npm install && npm run build",
+    "postinstall": "npm run build && cd server && npm install",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "migrate": "node server/database/migrate.js",
+    "deploy": "eb deploy",
+    "logs": "eb logs"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
+  "keywords": [
+    "esignature",
+    "pdf",
+    "document",
+    "signing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
