@@ -12,7 +12,7 @@ A complete web application for creating PDF templates, configuring signature pla
 - **Dashboard**: Track document status and manage sent/received documents
 - **Email Notifications**: Automatic emails for signing requests and completions
 - **PDF Processing**: Automatically add signatures to PDFs and generate audit trails
-- **Cloud Storage**: AWS S3 integration for secure document storage
+- **Cloud Storage**: S3-compatible storage for secure document storage
 
 ## Tech Stack
 
@@ -20,7 +20,7 @@ A complete web application for creating PDF templates, configuring signature pla
 - Node.js & Express.js
 - PostgreSQL database
 - JWT authentication
-- AWS S3 for file storage
+- S3-compatible storage for files
 - pdf-lib for PDF manipulation
 - Nodemailer for emails
 
@@ -34,9 +34,9 @@ A complete web application for creating PDF templates, configuring signature pla
 
 ## Prerequisites
 
-- Node.js 16+ and npm
+- Node.js 20+ and npm
 - PostgreSQL 12+
-- AWS account with S3 bucket
+- S3-compatible storage (AWS S3, MinIO, etc.)
 - Email account (Gmail recommended) for sending emails
 
 ## Installation
@@ -44,16 +44,13 @@ A complete web application for creating PDF templates, configuring signature pla
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd esignature-app
+git clone https://github.com/ratnakar-gumpena/e-signature-application.git
+cd e-signature-application
 ```
 
 ### 2. Install dependencies
 
 ```bash
-# Install root dependencies
-npm install
-
 # Install all dependencies (root, server, client)
 npm run install-all
 ```
@@ -79,16 +76,18 @@ Edit `.env` with your configuration:
 ```env
 # Server
 NODE_ENV=development
-PORT=5000
+PORT=8080
 
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/esignature_db
 
-# JWT
+# JWT Secrets (generate using: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
 JWT_SECRET=your-secret-key-here-change-in-production
 JWT_EXPIRE=7d
+JWT_REFRESH_SECRET=your-refresh-secret-key-here
+JWT_REFRESH_EXPIRE=30d
 
-# AWS S3
+# AWS S3 (or S3-compatible storage)
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
@@ -103,22 +102,36 @@ EMAIL_FROM=noreply@esignature.com
 
 # Frontend URL
 CLIENT_URL=http://localhost:3000
+
+# Security
+BCRYPT_ROUNDS=10
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# File Upload
+MAX_FILE_SIZE=10485760
+ALLOWED_FILE_TYPES=application/pdf
 ```
 
-### 5. Run database migrations
+### 5. Generate JWT Secrets
+
+```bash
+# Generate JWT_SECRET
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Generate JWT_REFRESH_SECRET
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+### 6. Run database migrations
 
 ```bash
 npm run migrate
 ```
 
-Or manually:
-
-```bash
-cd server
-node database/migrate.js
-```
-
-### 6. Start the application
+### 7. Start the application
 
 Development mode (runs both frontend and backend):
 
@@ -136,11 +149,11 @@ npm run server
 npm run client
 ```
 
-### 7. Access the application
+### 8. Access the application
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:5000/api
-- Health check: http://localhost:5000/health
+- Backend API: http://localhost:8080/api
+- Health check: http://localhost:8080/health
 
 ## Usage Guide
 
@@ -232,7 +245,7 @@ npm run client
 ## Project Structure
 
 ```
-esignature-app/
+e-signature-application/
 ├── client/                  # React frontend
 │   ├── src/
 │   │   ├── components/      # React components
@@ -259,14 +272,6 @@ esignature-app/
 └── README.md
 ```
 
-## AWS S3 Setup
-
-1. Create an S3 bucket in your AWS account
-2. Create an IAM user with S3 access
-3. Generate access keys
-4. Update `.env` with your credentials
-5. Set bucket CORS configuration if accessing from frontend
-
 ## Email Setup (Gmail)
 
 1. Enable 2-factor authentication on your Gmail account
@@ -276,452 +281,11 @@ esignature-app/
    - Generate password for "Mail"
 3. Use this app password in `.env` as `EMAIL_PASSWORD`
 
-## AWS Elastic Beanstalk Deployment
-
-This application is configured for deployment on AWS Elastic Beanstalk with AWS RDS (PostgreSQL) and S3 for file storage.
-
-### AWS Prerequisites
-
-Before deploying, ensure you have:
-
-1. **AWS Account** - Sign up at https://aws.amazon.com
-2. **AWS CLI** - Install from https://aws.amazon.com/cli/
-3. **EB CLI** - Install Elastic Beanstalk CLI
-4. **AWS RDS PostgreSQL Database** - Created and running
-5. **AWS S3 Bucket** - For document storage
-6. **IAM User** - With S3 and Elastic Beanstalk permissions
-
-### Step 1: Install AWS EB CLI
-
-```bash
-# Install using pip
-pip install awsebcli --upgrade --user
-
-# Verify installation
-eb --version
-```
-
-### Step 2: Configure AWS Credentials
-
-```bash
-# Configure AWS CLI with your credentials
-aws configure
-
-# Enter your:
-# - AWS Access Key ID
-# - AWS Secret Access Key
-# - Default region (e.g., us-east-1)
-# - Default output format (json)
-```
-
-### Step 3: Create AWS Resources
-
-#### 3.1 Create RDS PostgreSQL Database
-
-1. Go to AWS RDS Console
-2. Click "Create database"
-3. Choose PostgreSQL
-4. Select appropriate instance size (db.t3.micro for testing)
-5. Set master username and password
-6. Configure VPC and security groups
-7. Note the endpoint URL after creation
-
-#### 3.2 Create S3 Bucket
-
-```bash
-# Create S3 bucket
-aws s3 mb s3://esignature-documents-prod --region us-east-1
-
-# Enable versioning (optional)
-aws s3api put-bucket-versioning --bucket esignature-documents-prod \
-  --versioning-configuration Status=Enabled
-```
-
-#### 3.3 Create IAM User for S3 Access
-
-1. Go to IAM Console
-2. Create new user with programmatic access
-3. Attach policy: AmazonS3FullAccess
-4. Save Access Key ID and Secret Access Key
-
-### Step 4: Initialize Elastic Beanstalk
-
-```bash
-# From project root directory
-eb init
-
-# Answer the prompts:
-# 1. Select region: us-east-1 (or your preferred region)
-# 2. Application name: esignature-app
-# 3. Platform: Node.js
-# 4. Platform version: Node.js 18 running on 64bit Amazon Linux 2
-# 5. CodeCommit: No
-# 6. SSH: Yes (recommended for debugging)
-```
-
-### Step 5: Create Elastic Beanstalk Environment
-
-```bash
-# Create production environment
-eb create esignature-production \
-  --instance-type t3.small \
-  --envvars NODE_ENV=production
-
-# This will:
-# 1. Build and package your application
-# 2. Upload to S3
-# 3. Create EC2 instances
-# 4. Configure load balancer
-# 5. Deploy your application
-```
-
-### Step 6: Configure Environment Variables
-
-Set all required environment variables using `eb setenv`:
-
-```bash
-eb setenv \
-  NODE_ENV=production \
-  PORT=8080 \
-  DATABASE_URL="postgresql://username:password@your-rds-endpoint.us-east-1.rds.amazonaws.com:5432/esignature_db" \
-  JWT_SECRET="your-secure-random-secret-key-here" \
-  JWT_EXPIRE=7d \
-  JWT_REFRESH_SECRET="your-refresh-secret-key-here" \
-  JWT_REFRESH_EXPIRE=30d \
-  AWS_REGION=us-east-1 \
-  AWS_ACCESS_KEY_ID="your-iam-access-key" \
-  AWS_SECRET_ACCESS_KEY="your-iam-secret-key" \
-  AWS_S3_BUCKET="esignature-documents-prod" \
-  EMAIL_HOST=smtp.gmail.com \
-  EMAIL_PORT=587 \
-  EMAIL_USER="your-email@gmail.com" \
-  EMAIL_PASSWORD="your-gmail-app-password" \
-  EMAIL_FROM="noreply@esignature.com" \
-  CLIENT_URL="http://esignature-production.us-east-1.elasticbeanstalk.com" \
-  BCRYPT_ROUNDS=10 \
-  RATE_LIMIT_WINDOW_MS=900000 \
-  RATE_LIMIT_MAX_REQUESTS=100 \
-  MAX_FILE_SIZE=10485760 \
-  ALLOWED_FILE_TYPES=application/pdf
-```
-
-**Alternative**: Set environment variables via AWS Console:
-1. Go to Elastic Beanstalk Console
-2. Select your environment
-3. Configuration → Software → Environment properties
-4. Add each variable individually
-
-### Step 7: Run Database Migrations
-
-```bash
-# SSH into your EB instance
-eb ssh
-
-# Navigate to app directory
-cd /var/app/current
-
-# Run migrations
-node server/database/migrate.js
-
-# Exit SSH
-exit
-```
-
-**Alternative**: Run migrations locally pointing to RDS:
-
-```bash
-# Set DATABASE_URL locally
-export DATABASE_URL="postgresql://username:password@your-rds-endpoint:5432/esignature_db"
-
-# Run migrations
-npm run migrate
-```
-
-### Step 8: Configure Security Groups
-
-1. Go to EC2 Console → Security Groups
-2. Find your EB environment's security group
-3. Find your RDS security group
-4. Edit RDS security group inbound rules
-5. Add PostgreSQL rule (port 5432) allowing traffic from EB security group
-
-### Step 9: Open Your Application
-
-```bash
-# Open application in browser
-eb open
-```
-
-Your application should now be running at:
-`http://esignature-production.us-east-1.elasticbeanstalk.com`
-
-### Deployment Commands
-
-```bash
-# Deploy updates after code changes
-eb deploy
-
-# View application logs
-eb logs
-
-# View recent logs
-eb logs --stream
-
-# Check environment status
-eb status
-
-# Check environment health
-eb health
-
-# Open application in browser
-eb open
-
-# SSH into instance for debugging
-eb ssh
-
-# Restart application
-eb restart
-
-# View environment info
-eb printenv
-```
-
-### Update Environment Variables
-
-```bash
-# Update a single variable
-eb setenv VARIABLE_NAME=new_value
-
-# Update multiple variables
-eb setenv VAR1=value1 VAR2=value2
-
-# View all environment variables
-eb printenv
-```
-
-### Scaling Your Application
-
-```bash
-# Scale to multiple instances
-eb scale 3
-
-# Configure auto-scaling via console
-# Go to: Configuration → Capacity
-# Set min/max instances and scaling triggers
-```
-
-### Custom Domain Setup (Optional)
-
-1. Purchase domain from Route 53 or external provider
-2. Go to Elastic Beanstalk Console
-3. Your environment → Configuration → Load balancer
-4. Add listener for HTTPS (port 443)
-5. Attach SSL certificate (use AWS Certificate Manager)
-6. Go to Route 53
-7. Create hosted zone for your domain
-8. Create A record pointing to EB environment
-9. Update CLIENT_URL environment variable:
-
-```bash
-eb setenv CLIENT_URL="https://app.yourdomain.com"
-```
-
-### Monitoring and Logs
-
-#### View Logs
-
-```bash
-# Request last 100 lines
-eb logs
-
-# Stream logs in real-time
-eb logs --stream
-
-# Download full logs
-eb logs --all
-```
-
-#### CloudWatch Monitoring
-
-1. Go to CloudWatch Console
-2. Select "Logs" → "Log groups"
-3. Find `/aws/elasticbeanstalk/esignature-production/`
-4. View application logs, access logs, and error logs
-
-#### Set Up CloudWatch Alarms
-
-1. Go to CloudWatch Console
-2. Create alarms for:
-   - High CPU usage
-   - Memory usage
-   - HTTP 4xx/5xx errors
-   - Application health
-
-### Cost Optimization
-
-**Development/Testing:**
-```bash
-# Use smaller instance
-eb create esignature-dev --instance-type t3.micro --single
-
-# Terminate when not in use
-eb terminate esignature-dev
-```
-
-**Production:**
-- Use t3.small or t3.medium instances
-- Enable auto-scaling (scale down during off-hours)
-- Use RDS db.t3.micro for small workloads
-- Enable S3 lifecycle policies for old documents
-
-### Troubleshooting
-
-#### Application won't start
-
-```bash
-# Check logs
-eb logs
-
-# Common issues:
-# 1. Missing environment variables
-eb printenv
-
-# 2. Database connection issues
-# - Check security groups
-# - Verify DATABASE_URL is correct
-# - Test connection from EB instance
-
-# 3. Build failures
-# - Check .ebextensions config
-# - Verify package.json scripts
-```
-
-#### Database connection errors
-
-```bash
-# Test database connection
-eb ssh
-cd /var/app/current
-node -e "const { pool } = require('./server/config/database'); pool.query('SELECT NOW()').then(r => console.log(r.rows[0])).catch(e => console.error(e))"
-```
-
-#### File upload issues
-
-- Verify S3 bucket exists
-- Check IAM credentials are correct
-- Verify IAM user has S3 permissions
-- Check AWS_S3_BUCKET environment variable
-
-#### HTTPS/SSL Issues
-
-- Ensure load balancer has HTTPS listener
-- Attach SSL certificate via AWS Certificate Manager
-- Update `.ebextensions/https-redirect.config`
-
-### Rollback to Previous Version
-
-```bash
-# List previous versions
-eb appversion
-
-# Deploy specific version
-eb deploy --version version-label
-```
-
-### Maintenance Mode
-
-Create `.ebextensions/maintenance.config`:
-
-```yaml
-files:
-  "/etc/nginx/conf.d/maintenance.conf":
-    mode: "000644"
-    owner: root
-    group: root
-    content: |
-      return 503;
-```
-
-Deploy to enable maintenance mode. Remove file and deploy to disable.
-
-### Terminating Environment
-
-```bash
-# Terminate environment (WARNING: This deletes all resources)
-eb terminate esignature-production
-
-# Confirm when prompted
-```
-
-**Note**: This does NOT delete:
-- RDS database (delete separately)
-- S3 bucket (delete separately)
-- Elastic IPs
-- DNS records
-
-### Production Checklist
-
-Before going to production, ensure:
-
-- [ ] All environment variables are set correctly
-- [ ] DATABASE_URL points to production RDS instance
-- [ ] JWT_SECRET is a strong random string
-- [ ] AWS credentials are for IAM user (not root)
-- [ ] S3 bucket is private (ACL: private)
-- [ ] RDS security group allows only EB instances
-- [ ] SSL certificate is configured
-- [ ] Custom domain is set up (optional)
-- [ ] CloudWatch alarms are configured
-- [ ] Database backups are enabled (RDS automated backups)
-- [ ] S3 versioning is enabled
-- [ ] Application monitoring is set up
-- [ ] Error tracking is configured
-- [ ] Email service is configured and tested
-- [ ] Rate limiting is appropriate
-- [ ] CORS is properly configured
-
-### Alternative Deployment Options
-
-#### Frontend Deployment (Vercel/Netlify)
-
-If you want to deploy frontend separately:
-
-```bash
-# Build frontend
-cd client
-npm run build
-
-# Deploy build folder to Vercel/Netlify
-# Update REACT_APP_API_URL to your EB API URL
-```
-
-#### Backend Only Deployment (Heroku)
-
-```bash
-# Install Heroku CLI and login
-heroku login
-
-# Create app
-heroku create your-app-name
-
-# Add PostgreSQL addon
-heroku addons:create heroku-postgresql:hobby-dev
-
-# Set environment variables
-heroku config:set NODE_ENV=production
-heroku config:set JWT_SECRET=your-production-secret
-
-# Deploy
-git subtree push --prefix server heroku main
-
-# Run migrations
-heroku run node database/migrate.js
-```
-
 ## Security Considerations
 
-- Change `JWT_SECRET` in production
-- Use strong passwords
+- Change `JWT_SECRET` and `JWT_REFRESH_SECRET` in production
+- Use strong, randomly generated secrets (use the generation script above)
+- Use strong database passwords
 - Enable HTTPS in production
 - Set up proper CORS configuration
 - Implement rate limiting (already included)
@@ -739,7 +303,7 @@ heroku run node database/migrate.js
 - Ensure database exists
 
 ### File upload errors
-- Check AWS credentials
+- Check S3 credentials
 - Verify S3 bucket exists and has proper permissions
 - Check file size limits (default 10MB)
 
@@ -749,9 +313,9 @@ heroku run node database/migrate.js
 - Ensure less secure apps are enabled (if not using app password)
 
 ### Frontend can't connect to backend
-- Verify backend is running on port 5000
+- Verify backend is running on correct port
 - Check CORS configuration
-- Verify API_URL in frontend
+- Verify CLIENT_URL in `.env`
 
 ## Contributing
 
