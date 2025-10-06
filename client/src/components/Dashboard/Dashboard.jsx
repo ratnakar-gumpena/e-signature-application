@@ -7,7 +7,7 @@ import Loader from '../Common/Loader';
 
 const Dashboard = () => {
   const [filter, setFilter] = useState('');
-  const { documents, loading } = useDocuments({ status: filter });
+  const { documents, loading, deleteDocument } = useDocuments({ status: filter });
   const navigate = useNavigate();
 
   const stats = {
@@ -92,7 +92,7 @@ const Dashboard = () => {
             <Loader />
           </div>
         ) : (
-          <DocumentList documents={documents} />
+          <DocumentList documents={documents} onDelete={deleteDocument} />
         )}
       </div>
     </div>

@@ -28,19 +28,17 @@ const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex items-center justify-center min-h-screen px-4 py-6 sm:p-0">
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={onClose}
         />
 
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-
         <div
-          className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}
+          className={`relative bg-white rounded-lg text-left shadow-xl transform transition-all ${sizeClasses[size]} w-full max-h-[90vh] flex flex-col`}
         >
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-start justify-between mb-4">
+          <div className="bg-white px-4 pt-5 pb-4 sm:px-6 sm:pt-6 border-b border-gray-200 flex-shrink-0">
+            <div className="flex items-start justify-between">
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               <button
                 onClick={onClose}
@@ -51,7 +49,9 @@ const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
                 </svg>
               </button>
             </div>
-            <div>{children}</div>
+          </div>
+          <div className="overflow-y-auto flex-1 px-4 py-4 sm:px-6">
+            {children}
           </div>
         </div>
       </div>

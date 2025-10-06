@@ -13,6 +13,9 @@ import Loader from './components/Common/Loader';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
+import NewDocument from './components/Documents/NewDocument';
+import Templates from './components/Templates/Templates';
+import TemplateEditor from './components/Templates/TemplateEditor';
 import SigningPage from './components/Signing/SigningPage';
 import CompletionPage from './components/Signing/CompletionPage';
 
@@ -78,6 +81,30 @@ function AppRoutes() {
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/documents/new"
+                  element={
+                    <ProtectedRoute>
+                      <NewDocument />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/templates"
+                  element={
+                    <ProtectedRoute>
+                      <Templates />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/templates/editor"
+                  element={
+                    <ProtectedRoute>
+                      <TemplateEditor />
                     </ProtectedRoute>
                   }
                 />

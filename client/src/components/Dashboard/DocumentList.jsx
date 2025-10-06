@@ -1,13 +1,36 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { Document, Page, pdfjs } from 'react-pdf';
 import StatusBadge from './StatusBadge';
-import Button from '../Common/Button';
+import Modal from '../Common/Modal';
 import documentService from '../../services/documentService';
 import { toast } from 'react-toastify';
 
-const DocumentList = ({ documents }) => {
-  const navigate = useNavigate();
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+const DocumentList = ({ documents, onDelete }) => {
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [numPages, setNumPages] = useState(null);
+
+  const handleView = async (doc) => {
+    try {
+      const response = await documentService.getById(doc.id);
+      let fileUrl = response.document.original_file_url;
+
+      // Convert relative URL to absolute URL for local development
+      if (fileUrl.startsWith('/uploads/')) {
+        fileUrl = `http://localhost:8080${fileUrl}`;
+      }
+
+      setPdfUrl(fileUrl);
+      setSelectedDocument(doc);
+      setIsModalOpen(true);
+    } catch (error) {
+      toast.error('Failed to load document');
+    }
+  };
 
   const handleDownload = async (documentId) => {
     try {
@@ -18,13 +41,31 @@ const DocumentList = ({ documents }) => {
     }
   };
 
+  const handleDelete = async (documentId, title) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      try {
+        await onDelete(documentId);
+      } catch (error) {
+        // Error already handled by useDocuments hook
+      }
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedDocument(null);
+    setPdfUrl(null);
+    setNumPages(null);
+  };
+
+  const onDocumentLoadSuccess = ({ numPages }) => {
+    setNumPages(numPages);
+  };
+
   if (documents.length === 0) {
     return (
       <div className="p-12 text-center">
         <p className="text-gray-500">No documents found</p>
-        <Button className="mt-4" onClick={() => navigate('/documents/new')}>
-          Create Your First Document
-        </Button>
       </div>
     );
   }
@@ -68,7 +109,7 @@ const DocumentList = ({ documents }) => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                 <button
-                  onClick={() => navigate(`/documents/${doc.id}`)}
+                  onClick={() => handleView(doc)}
                   className="text-primary-600 hover:text-primary-900"
                 >
                   View
@@ -81,11 +122,71 @@ const DocumentList = ({ documents }) => {
                     Download
                   </button>
                 )}
+                <button
+                  onClick={() => handleDelete(doc.id, doc.title)}
+                  className="text-red-600 hover:text-red-900"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={selectedDocument?.title || 'Document'}
+        size="full"
+      >
+        <div className="flex flex-col h-[80vh]">
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => handleDownload(selectedDocument?.id)}
+              className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download
+            </button>
+          </div>
+          {pdfUrl && (
+            <div className="flex-1 border border-gray-300 rounded-lg flex justify-center overflow-hidden">
+              <div className="bg-gray-100 p-4 overflow-auto h-full">
+                <Document
+                  file={pdfUrl}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={(error) => {
+                    console.error('Error loading PDF:', error);
+                    toast.error('Failed to load PDF');
+                  }}
+                >
+                  {Array.from(new Array(numPages), (el, index) => (
+                    <Page
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1}
+                      width={800}
+                      className="mb-4 shadow-lg"
+                    />
+                  ))}
+                </Document>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

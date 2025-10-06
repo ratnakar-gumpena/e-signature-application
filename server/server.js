@@ -38,6 +38,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Serve uploaded files in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+}
+
 app.use('/api/auth', authRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/documents', documentRoutes);

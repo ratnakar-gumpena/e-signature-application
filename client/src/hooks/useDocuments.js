@@ -19,7 +19,7 @@ export const useDocuments = (filters = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [JSON.stringify(filters)]);
 
   useEffect(() => {
     fetchDocuments();
